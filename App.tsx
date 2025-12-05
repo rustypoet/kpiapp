@@ -7,7 +7,7 @@ import { KpiConfig } from './components/KpiConfig';
 import { QADashboard } from './components/QADashboard';
 import { AppState, KPI, KpiEntry, MonthlyQualitative } from './types';
 import { importFromExcel } from './services/excelService';
-import { ChevronRight, ChevronLeft, Upload, FileSpreadsheet, PlayCircle, User, Building2, BarChart3 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Upload, FileSpreadsheet, PlayCircle, User, Building2, BarChart3, HelpCircle, CheckCircle2, ClipboardCheck } from 'lucide-react';
 
 const App: React.FC = () => {
   // Wizard State
@@ -38,7 +38,7 @@ const App: React.FC = () => {
     department: '',
     kpis: [],
     data: {},
-    projectName: 'Performanta Departament'
+    projectName: 'Raport Performanta Departament'
   });
 
   // Landing Page Inputs
@@ -104,7 +104,7 @@ const App: React.FC = () => {
         // Jump to dashboard if imported
         setCurrentStep(14);
       } catch (err) {
-        alert('Eșec la import.');
+        alert('Nu am putut citi fisierul. Verificati ca este un fisier Excel valid exportat din aceasta aplicatie.');
       }
     }
   };
@@ -113,11 +113,21 @@ const App: React.FC = () => {
   const nextStep = () => setCurrentStep(p => Math.min(p + 1, 14));
   const prevStep = () => setCurrentStep(p => Math.max(p - 1, 0));
 
-  // Determine Title based on Step
+  // Determine Title and Description based on Step
   let stepTitle = "";
-  if (currentStep === 1) stepTitle = "Pasul 1: Definire Indicatori (KPI)";
-  else if (currentStep >= 2 && currentStep <= 13) stepTitle = `Raportare: ${months[currentStep - 2].name}`;
-  else if (currentStep === 14) stepTitle = "Rezultate Finale";
+  let stepDescription = "";
+
+  if (currentStep === 1) {
+    stepTitle = "Pasul 1 din 3: Definiti Indicatorii";
+    stepDescription = "Adaugati indicatorii de performanta (KPI) pe care doriti sa ii urmariti lunar pentru departamentul dumneavoastra.";
+  } else if (currentStep >= 2 && currentStep <= 13) {
+    const monthIndex = currentStep - 2;
+    stepTitle = `Pasul 2 din 3: Completati Datele pentru ${months[monthIndex].name}`;
+    stepDescription = "Introduceti valorile realizate pentru fiecare indicator. Daca un indicator nu atinge tinta, completati planul de actiune.";
+  } else if (currentStep === 14) {
+    stepTitle = "Pasul 3 din 3: Verificati si Salvati";
+    stepDescription = "Verificati datele introduse si salvati raportul final.";
+  }
 
   // RENDER QA MODE
   if (mode === 'qa') {
@@ -129,98 +139,139 @@ const App: React.FC = () => {
     // 0. Landing
     if (currentStep === 0) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 animate-in zoom-in duration-500">
-           <div className="text-center space-y-4 max-w-2xl">
-             <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-blue-200">
-               <FileSpreadsheet className="w-10 h-10 text-white" />
-             </div>
-             <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">Centralizator KPI</h1>
-             <p className="text-slate-500 text-lg">
-               Centralizați datele de performanță, monitorizați deficitele și generați planuri de acțiune.
-             </p>
-           </div>
+        <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 animate-in zoom-in duration-500">
 
-           {/* Role Selection / Identification */}
-           <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
-             
-             {/* LEFT: Manager Flow */}
-             <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-6">
-                <div className="border-b border-slate-100 pb-4">
-                  <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-600" />
-                    Manager Departament
-                  </h3>
-                  <p className="text-sm text-slate-400">Completați raportul lunar de performanță.</p>
-                </div>
-                
-                <div className="space-y-4">
-                   <div>
-                     <label className="block text-sm font-semibold text-slate-600 mb-1">Numele Tău</label>
-                     <input 
-                       type="text" 
-                       className="w-full px-4 py-3 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                       placeholder="ex. Ion Popescu"
-                       value={state.managerName}
-                       onChange={e => handleIdentityChange('managerName', e.target.value)}
-                     />
-                   </div>
-                   <div>
-                     <label className="block text-sm font-semibold text-slate-600 mb-1">Departament</label>
-                     <input 
-                       type="text" 
-                       className="w-full px-4 py-3 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                       placeholder="ex. Vânzări, Logistică..."
-                       value={state.department}
-                       onChange={e => handleIdentityChange('department', e.target.value)}
-                     />
-                   </div>
-                </div>
+          {/* Welcome Header */}
+          <div className="text-center space-y-4 max-w-3xl px-4">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-700 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-blue-200">
+              <ClipboardCheck className="w-12 h-12 text-white" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">
+              Bine ati venit!
+            </h1>
+            <p className="text-slate-600 text-xl leading-relaxed">
+              Aceasta aplicatie va ajuta sa completati <strong>raportul lunar de performanta</strong> al departamentului dumneavoastra in doar <strong>3 pasi simpli</strong>.
+            </p>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-auto">
-                   <button 
-                     onClick={startNew}
-                     disabled={!state.managerName || !state.department}
-                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
-                   >
-                     <PlayCircle className="w-5 h-5" /> Start Nou
-                   </button>
-                   <div className="relative">
-                      <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
-                      >
-                        <Upload className="w-5 h-5" /> Continuă
-                      </button>
-                      <input type="file" ref={fileInputRef} onChange={handleImportFile} accept=".xlsx" className="hidden" />
-                   </div>
+          {/* Steps Overview */}
+          <div className="w-full max-w-4xl px-4">
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+              <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
+                <HelpCircle className="w-5 h-5" />
+                Cum functioneaza?
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                  <div>
+                    <p className="font-semibold text-blue-900">Definiti Indicatorii</p>
+                    <p className="text-sm text-blue-700">Adaugati KPI-urile pe care le urmariti (ex: vanzari, productivitate)</p>
+                  </div>
                 </div>
-             </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                  <div>
+                    <p className="font-semibold text-blue-900">Completati Datele</p>
+                    <p className="text-sm text-blue-700">Pentru fiecare luna, introduceti valorile realizate</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                  <div>
+                    <p className="font-semibold text-blue-900">Salvati Raportul</p>
+                    <p className="text-sm text-blue-700">Verificati si salvati - datele vor fi trimise automat</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-             {/* RIGHT: QA Flow */}
-             <div className="bg-slate-900 p-8 rounded-2xl shadow-xl flex flex-col justify-between text-white relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-32 bg-blue-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                
-                <div className="relative z-10">
-                   <h3 className="text-xl font-bold flex items-center gap-2 mb-2">
-                     <BarChart3 className="w-5 h-5 text-blue-400" />
-                     Vedere QA / Master
-                   </h3>
-                   <p className="text-slate-400 text-sm">
-                     Combinați mai multe rapoarte Excel pentru a analiza performanța globală și a urmări planurile de acțiune.
-                   </p>
+          {/* Main Form */}
+          <div className="w-full max-w-4xl px-4">
+            <div className="bg-white p-8 rounded-2xl border-2 border-slate-200 shadow-lg">
+              <div className="border-b border-slate-100 pb-6 mb-6">
+                <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                  <User className="w-7 h-7 text-blue-600" />
+                  Introduceti Datele Dumneavoastra
+                </h3>
+                <p className="text-slate-500 mt-2">
+                  Aceste informatii vor aparea in raportul final si vor ajuta la identificarea departamentului.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-lg font-semibold text-slate-700 mb-2">
+                    Numele si Prenumele Dumneavoastra <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-5 py-4 text-lg bg-white text-slate-900 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all"
+                    placeholder="Exemplu: Popescu Ion"
+                    value={state.managerName}
+                    onChange={e => handleIdentityChange('managerName', e.target.value)}
+                  />
+                  <p className="text-sm text-slate-400 mt-1">Scrieti numele complet asa cum doriti sa apara in raport</p>
                 </div>
 
-                <div className="relative z-10 mt-8">
-                  <button 
-                    onClick={startQA}
-                    className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/50"
+                <div>
+                  <label className="block text-lg font-semibold text-slate-700 mb-2">
+                    Departamentul <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-5 py-4 text-lg bg-white text-slate-900 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all"
+                    placeholder="Exemplu: Vanzari, Productie, Logistica, Resurse Umane..."
+                    value={state.department}
+                    onChange={e => handleIdentityChange('department', e.target.value)}
+                  />
+                  <p className="text-sm text-slate-400 mt-1">Numele departamentului pe care il conduceti</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-slate-100">
+                <button
+                  onClick={startNew}
+                  disabled={!state.managerName || !state.department}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-lg font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-blue-200 disabled:shadow-none"
+                >
+                  <PlayCircle className="w-6 h-6" />
+                  Incepe Raportul Nou
+                </button>
+
+                <div className="relative sm:w-auto">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 text-slate-700 text-lg font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all"
                   >
-                    Deschide Panoul QA <ChevronRight className="w-5 h-5" />
+                    <Upload className="w-6 h-6" />
+                    Am deja un raport salvat
                   </button>
+                  <input type="file" ref={fileInputRef} onChange={handleImportFile} accept=".xlsx" className="hidden" />
                 </div>
-             </div>
+              </div>
+            </div>
+          </div>
 
-           </div>
+          {/* QA Access - Less prominent */}
+          <div className="w-full max-w-4xl px-4">
+            <div className="bg-slate-800 p-6 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3 text-white">
+                <BarChart3 className="w-6 h-6 text-blue-400" />
+                <div>
+                  <p className="font-semibold">Sunteti din echipa de QA sau Management?</p>
+                  <p className="text-sm text-slate-400">Accesati panoul de analiza pentru a vedea toate rapoartele</p>
+                </div>
+              </div>
+              <button
+                onClick={startQA}
+                className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition-all whitespace-nowrap"
+              >
+                Deschide Panoul QA <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -239,9 +290,9 @@ const App: React.FC = () => {
       const monthIndex = currentStep - 2;
       const currentMonth = months[monthIndex];
       return (
-        <DataEntry 
-          kpis={state.kpis} 
-          data={state.data} 
+        <DataEntry
+          kpis={state.kpis}
+          data={state.data}
           month={currentMonth.id}
           onSaveEntry={handleSaveEntry}
           onSaveQualitative={handleSaveQualitative}
@@ -253,12 +304,32 @@ const App: React.FC = () => {
     return <Dashboard state={state} />;
   };
 
+  // Calculate progress for navigation
+  const getProgressInfo = () => {
+    if (currentStep === 0) return null;
+    if (currentStep === 1) return { current: 1, total: 3, label: 'Definire Indicatori' };
+    if (currentStep >= 2 && currentStep <= 13) {
+      const monthsDone = currentStep - 1;
+      return {
+        current: 2,
+        total: 3,
+        label: `Completare Date (Luna ${monthsDone}/12)`,
+        subProgress: ((currentStep - 1) / 12) * 100
+      };
+    }
+    return { current: 3, total: 3, label: 'Verificare si Salvare' };
+  };
+
+  const progressInfo = getProgressInfo();
+
   return (
-    <Layout 
-      currentStep={currentStep} 
-      totalSteps={15} 
-      title={`${state.department ? state.department + ' | ' : ''}${state.projectName}`}
+    <Layout
+      currentStep={currentStep}
+      totalSteps={15}
+      title={state.department || 'Raport Performanta'}
       stepTitle={stepTitle}
+      stepDescription={stepDescription}
+      progressInfo={progressInfo}
     >
       <div className="min-h-[60vh] flex flex-col">
         <div className="flex-1">
@@ -267,45 +338,83 @@ const App: React.FC = () => {
 
         {/* Wizard Footer Navigation (Only show if not Landing) */}
         {currentStep > 0 && (
-          <div className="sticky bottom-0 mt-12 bg-white/80 backdrop-blur-md border-t border-slate-200 p-4 -mx-4 md:-mx-8 z-20">
-             <div className="max-w-5xl mx-auto flex justify-between items-center">
-               {/* BACK BUTTON */}
-               {currentStep === 1 ? (
-                 <button 
-                  onClick={() => setCurrentStep(0)} 
-                  className="px-6 py-2.5 text-slate-500 font-medium hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-2"
-                 >
-                   Anulează
-                 </button>
-               ) : (
-                 <button 
-                  onClick={prevStep} 
-                  className="px-6 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-2 border border-slate-200 bg-white"
-                 >
-                   <ChevronLeft className="w-4 h-4" /> Înapoi
-                 </button>
-               )}
+          <div className="sticky bottom-0 mt-12 bg-white/95 backdrop-blur-md border-t-2 border-slate-200 p-4 -mx-4 md:-mx-8 z-20 shadow-lg">
+            <div className="max-w-5xl mx-auto">
 
-               {/* NEXT BUTTON */}
-               {currentStep < 14 && (
-                 <button 
-                   onClick={nextStep}
-                   disabled={currentStep === 1 && state.kpis.length === 0}
-                   className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg hover:shadow-blue-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                 >
-                   {currentStep === 13 ? 'Finalizare & Raport' : 'Pasul Următor'} <ChevronRight className="w-5 h-5" />
-                 </button>
-               )}
-               {/* On Dashboard, button is handled inside component or hidden */}
-               {currentStep === 14 && (
-                  <button 
-                  onClick={() => setCurrentStep(0)} 
-                  className="px-6 py-2.5 text-slate-500 font-medium hover:bg-slate-100 rounded-lg transition-colors"
-                 >
-                   Începe din nou
-                 </button>
-               )}
-             </div>
+              {/* Progress indicator for month steps */}
+              {currentStep >= 2 && currentStep <= 13 && (
+                <div className="mb-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
+                    <span>Luna {currentStep - 1} din 12</span>
+                    <span>{Math.round(((currentStep - 1) / 12) * 100)}% completat</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-500"
+                      style={{ width: `${((currentStep - 1) / 12) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center gap-4">
+                {/* BACK BUTTON */}
+                {currentStep === 1 ? (
+                  <button
+                    onClick={() => setCurrentStep(0)}
+                    className="px-6 py-3 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors flex items-center gap-2 border border-slate-200"
+                  >
+                    <ChevronLeft className="w-5 h-5" /> Inapoi la Inceput
+                  </button>
+                ) : currentStep === 14 ? (
+                  <button
+                    onClick={() => setCurrentStep(0)}
+                    className="px-6 py-3 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors flex items-center gap-2 border border-slate-200"
+                  >
+                    Incepe un Raport Nou
+                  </button>
+                ) : (
+                  <button
+                    onClick={prevStep}
+                    className="px-6 py-3 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors flex items-center gap-2 border border-slate-200"
+                  >
+                    <ChevronLeft className="w-5 h-5" /> Luna Anterioara
+                  </button>
+                )}
+
+                {/* NEXT BUTTON */}
+                {currentStep < 14 && (
+                  <button
+                    onClick={nextStep}
+                    disabled={currentStep === 1 && state.kpis.length === 0}
+                    className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-xl shadow-lg hover:shadow-blue-200 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                  >
+                    {currentStep === 1 && (
+                      <>
+                        Continua cu Completarea Datelor <ChevronRight className="w-6 h-6" />
+                      </>
+                    )}
+                    {currentStep >= 2 && currentStep < 13 && (
+                      <>
+                        Salveaza si Treci la Luna Urmatoare <ChevronRight className="w-6 h-6" />
+                      </>
+                    )}
+                    {currentStep === 13 && (
+                      <>
+                        <CheckCircle2 className="w-6 h-6" /> Finalizeaza si Vezi Raportul
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Help text */}
+              {currentStep === 1 && state.kpis.length === 0 && (
+                <p className="text-center text-amber-600 text-sm mt-3 font-medium">
+                  Adaugati cel putin un indicator (KPI) pentru a putea continua
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>

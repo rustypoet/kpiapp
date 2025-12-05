@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { KPI, MonthlyData, KpiEntry, MonthlyQualitative } from '../types';
 import { checkIsOutOfTarget } from '../utils';
-import { User, Calendar, Clock, AlertTriangle, ClipboardList, TrendingUp, AlertOctagon, Lightbulb } from 'lucide-react';
+import { User, Calendar, Clock, AlertTriangle, ClipboardList, TrendingUp, AlertOctagon, Lightbulb, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
 
 interface Props {
   kpis: KPI[];
@@ -41,8 +41,8 @@ export const DataEntry: React.FC<Props> = ({ kpis, data, month, onSaveEntry, onS
 
   const handleValueChange = (kpi: KPI, value: string) => {
     const isOutOfTarget = checkIsOutOfTarget(value, kpi);
-    updateEntry(kpi.id, { 
-      value, 
+    updateEntry(kpi.id, {
+      value,
       isOutOfTarget,
     });
   };
@@ -60,161 +60,226 @@ export const DataEntry: React.FC<Props> = ({ kpis, data, month, onSaveEntry, onS
 
   const monthName = new Date(month + '-01').toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' });
 
+  // Calculate completed indicators
+  const completedCount = kpis.filter(kpi => {
+    const entry = currentMonthData[kpi.id];
+    return entry && entry.value !== undefined && entry.value !== '';
+  }).length;
+
   return (
-    <div className="space-y-12 animate-in fade-in duration-500">
-      
+    <div className="space-y-10 animate-in fade-in duration-500">
+
+      {/* Progress for this month */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+              <ClipboardList className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-blue-900">Completati datele pentru {monthName}</h3>
+              <p className="text-sm text-blue-700">Ati completat {completedCount} din {kpis.length} indicatori</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-blue-600">{completedCount}/{kpis.length}</div>
+          </div>
+        </div>
+      </div>
+
       {/* SECTION 1: KPIS */}
       <div className="space-y-6">
-        <h2 className="text-xl font-bold text-slate-800 border-b border-slate-200 pb-2">1. Indicatori de Performanță (KPI)</h2>
-        <div className="grid grid-cols-1 gap-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Indicatorii de Performanta</h2>
+            <p className="text-slate-500 mt-1">Introduceti valoarea realizata pentru fiecare indicator in aceasta luna</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
           {kpis.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
-              <p className="text-slate-500">Niciun KPI configurat.</p>
+            <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-slate-200">
+              <p className="text-slate-500 text-lg">Nu ati definit niciun indicator</p>
+              <p className="text-slate-400 text-sm mt-1">Intoarceti-va la pasul anterior pentru a adauga indicatori</p>
             </div>
           )}
-          
-          {kpis.map(kpi => {
+
+          {kpis.map((kpi, index) => {
             const entry = currentMonthData[kpi.id];
             const hasValue = entry && entry.value !== undefined && entry.value !== '';
             const isOutOfTarget = entry?.isOutOfTarget;
 
             return (
-              <div 
-                key={kpi.id} 
-                className={`bg-white rounded-xl border shadow-sm transition-all duration-300 overflow-hidden ${
-                  isOutOfTarget ? 'border-red-200 shadow-red-50 ring-1 ring-red-100' : 'border-slate-200'
-                }`}
+              <div
+                key={kpi.id}
+                className={`bg-white rounded-xl border-2 shadow-sm transition-all duration-300 overflow-hidden ${isOutOfTarget ? 'border-red-300 shadow-red-50' : hasValue ? 'border-green-300' : 'border-slate-200'
+                  }`}
               >
+                {/* Status Header */}
+                <div className={`px-6 py-3 flex items-center justify-between ${isOutOfTarget ? 'bg-red-50' : hasValue ? 'bg-green-50' : 'bg-slate-50'
+                  }`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${isOutOfTarget ? 'bg-red-500 text-white' : hasValue ? 'bg-green-500 text-white' : 'bg-slate-300 text-white'
+                      }`}>
+                      {index + 1}
+                    </div>
+                    <span className="font-semibold text-slate-700">{kpi.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {hasValue && !isOutOfTarget && (
+                      <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
+                        <CheckCircle2 className="w-4 h-4" /> Tinta atinsa
+                      </span>
+                    )}
+                    {isOutOfTarget && (
+                      <span className="flex items-center gap-1 text-red-600 text-sm font-medium">
+                        <XCircle className="w-4 h-4" /> Sub tinta - completati planul de actiune
+                      </span>
+                    )}
+                    {!hasValue && (
+                      <span className="text-slate-400 text-sm">Asteptam valoarea</span>
+                    )}
+                  </div>
+                </div>
+
                 <div className="p-6">
                   <div className="flex flex-col lg:flex-row gap-8">
-                    
+
                     {/* LEFT: Metric Input */}
                     <div className="flex-1 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-1.5 h-10 rounded-full ${hasValue ? (isOutOfTarget ? 'bg-red-500' : 'bg-green-500') : 'bg-slate-200'}`}></div>
-                          <div>
-                            <h3 className="font-bold text-slate-800 text-lg">{kpi.name}</h3>
-                            {kpi.type !== 'text' && (
-                              <div className="flex items-center gap-2 text-xs font-mono text-slate-500 mt-1">
-                                <span className="bg-slate-100 px-2 py-0.5 rounded">Țintă: {kpi.operator} {kpi.targetValue}{kpi.type === 'percentage' ? '%' : ''}</span>
-                              </div>
-                            )}
-                          </div>
+                      {kpi.type !== 'text' && (
+                        <div className="bg-slate-50 p-3 rounded-lg inline-flex items-center gap-2 text-sm">
+                          <span className="text-slate-500">Tinta stabilita:</span>
+                          <span className="font-bold text-slate-700">
+                            {kpi.operator === '>=' && 'cel putin '}
+                            {kpi.operator === '<=' && 'cel mult '}
+                            {kpi.operator === '>' && 'mai mare de '}
+                            {kpi.operator === '<' && 'mai mic de '}
+                            {kpi.targetValue}{kpi.type === 'percentage' ? '%' : ''}
+                          </span>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="pt-2">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                          Realizat - {monthName}
+                      <div>
+                        <label className="block text-base font-semibold text-slate-700 mb-2">
+                          Valoarea Realizata in {monthName}
                         </label>
-                        
+
                         {kpi.type === 'text' ? (
-                           <div className="space-y-3">
-                             <textarea
-                               className="w-full px-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[80px]"
-                               placeholder="Introduceți feedback calitativ..."
-                               value={entry?.value || ''}
-                               onChange={(e) => handleValueChange(kpi, e.target.value)}
-                             />
-                             <div className="flex items-center gap-2">
-                               <input 
-                                 type="checkbox"
-                                 id={`oot-${kpi.id}`}
-                                 checked={isOutOfTarget || false}
-                                 onChange={() => toggleManualStatus(kpi.id, isOutOfTarget || false)}
-                                 className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                               />
-                               <label htmlFor={`oot-${kpi.id}`} className="text-sm text-slate-600 cursor-pointer">
-                                 Necesită Plan de Acțiune / Nesatisfăcător
-                               </label>
-                             </div>
-                           </div>
+                          <div className="space-y-3">
+                            <textarea
+                              className="w-full px-4 py-3 text-base bg-white text-slate-900 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all min-h-[100px]"
+                              placeholder="Descrieti situatia, rezultatele obtinute, observatii relevante..."
+                              value={entry?.value || ''}
+                              onChange={(e) => handleValueChange(kpi, e.target.value)}
+                            />
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                              <input
+                                type="checkbox"
+                                id={`oot-${kpi.id}`}
+                                checked={isOutOfTarget || false}
+                                onChange={() => toggleManualStatus(kpi.id, isOutOfTarget || false)}
+                                className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                              />
+                              <label htmlFor={`oot-${kpi.id}`} className="text-sm text-slate-600 cursor-pointer">
+                                <strong>Bifati aceasta casuta</strong> daca rezultatul NU este satisfacator si necesita un plan de actiune
+                              </label>
+                            </div>
+                          </div>
                         ) : (
-                          <div className="relative group">
+                          <div className="relative">
                             <input
                               type="number"
-                              className={`w-full text-3xl font-mono px-4 py-4 bg-white border rounded-lg focus:ring-2 transition-all outline-none ${
-                                isOutOfTarget 
-                                  ? 'border-red-300 text-red-700 focus:ring-red-500 focus:border-red-500 bg-red-50' 
-                                  : 'border-slate-200 text-slate-900 focus:ring-blue-500 focus:border-blue-500'
-                              }`}
-                              placeholder="-"
+                              className={`w-full text-4xl font-mono px-5 py-5 bg-white border-2 rounded-xl focus:ring-4 transition-all outline-none ${isOutOfTarget
+                                  ? 'border-red-300 text-red-700 focus:ring-red-100 focus:border-red-500 bg-red-50'
+                                  : hasValue
+                                    ? 'border-green-300 text-green-700 focus:ring-green-100 focus:border-green-500'
+                                    : 'border-slate-200 text-slate-900 focus:ring-blue-100 focus:border-blue-500'
+                                }`}
+                              placeholder="Introduceti valoarea"
                               value={entry?.value ?? ''}
                               onChange={(e) => handleValueChange(kpi, e.target.value)}
                             />
                             {kpi.type === 'percentage' && (
-                              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl pointer-events-none">%</div>
+                              <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-2xl pointer-events-none">%</div>
                             )}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* RIGHT: Action Plan (Conditional) */}
-                    <div className={`flex-1 transition-all duration-500 ease-in-out ${isOutOfTarget ? 'opacity-100 translate-x-0' : 'opacity-30 translate-x-4 grayscale pointer-events-none hidden lg:block'}`}>
-                      <div className={`h-full p-5 rounded-xl border ${isOutOfTarget ? 'bg-red-50/50 border-red-100' : 'bg-slate-50 border-slate-100'}`}>
-                        <div className="flex items-center gap-2 mb-4">
-                           <AlertTriangle className={`w-5 h-5 ${isOutOfTarget ? 'text-red-600' : 'text-slate-400'}`} />
-                           <h4 className={`font-bold ${isOutOfTarget ? 'text-red-800' : 'text-slate-500'}`}>
-                             Plan de Acțiune Necesar
-                           </h4>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-500 mb-1">Măsuri Corective</label>
-                            <textarea
-                              className="w-full px-3 py-2 text-sm bg-white text-slate-900 border border-slate-200 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none h-20"
-                              placeholder="Ce măsuri vor fi luate?"
-                              value={entry?.actionTask || ''}
-                              onChange={(e) => updateEntry(kpi.id, { actionTask: e.target.value })}
-                            />
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
-                                <User className="w-3 h-3" /> Responsabil
-                              </label>
-                              <input 
-                                type="text"
-                                className="w-full px-3 py-2 text-sm bg-white text-slate-900 border border-slate-200 rounded-md focus:ring-2 focus:ring-red-500"
-                                placeholder="Nume"
-                                value={entry?.responsible || ''}
-                                onChange={(e) => updateEntry(kpi.id, { responsible: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
-                                <Calendar className="w-3 h-3" /> Termen
-                              </label>
-                              <input 
-                                type="date"
-                                className="w-full px-3 py-2 text-sm bg-white text-slate-900 border border-slate-200 rounded-md focus:ring-2 focus:ring-red-500"
-                                value={entry?.dueDate || ''}
-                                onChange={(e) => updateEntry(kpi.id, { dueDate: e.target.value })}
-                              />
-                            </div>
+                    {/* RIGHT: Action Plan (Only visible when out of target) */}
+                    {isOutOfTarget && (
+                      <div className="flex-1">
+                        <div className="h-full p-5 rounded-xl bg-red-50 border-2 border-red-200">
+                          <div className="flex items-center gap-2 mb-4">
+                            <AlertTriangle className="w-6 h-6 text-red-600" />
+                            <h4 className="font-bold text-red-800 text-lg">
+                              Plan de Actiune Obligatoriu
+                            </h4>
                           </div>
 
-                          <div>
-                             <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
-                                <Clock className="w-3 h-3" /> Status
+                          <p className="text-sm text-red-700 mb-4">
+                            Deoarece indicatorul nu a atins tinta, trebuie sa completati un plan de actiune pentru remediere.
+                          </p>
+
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Ce masuri veti lua pentru a remedia situatia?
+                              </label>
+                              <textarea
+                                className="w-full px-4 py-3 text-sm bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-red-100 focus:border-red-500 resize-none h-24"
+                                placeholder="Descrieti actiunile concrete pe care le veti intreprinde..."
+                                value={entry?.actionTask || ''}
+                                onChange={(e) => updateEntry(kpi.id, { actionTask: e.target.value })}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                                  <User className="w-4 h-4" /> Cine este responsabil?
+                                </label>
+                                <input
+                                  type="text"
+                                  className="w-full px-4 py-3 text-sm bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-red-100"
+                                  placeholder="Numele persoanei responsabile"
+                                  value={entry?.responsible || ''}
+                                  onChange={(e) => updateEntry(kpi.id, { responsible: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" /> Pana cand?
+                                </label>
+                                <input
+                                  type="date"
+                                  className="w-full px-4 py-3 text-sm bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-red-100"
+                                  value={entry?.dueDate || ''}
+                                  onChange={(e) => updateEntry(kpi.id, { dueDate: e.target.value })}
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                                <Clock className="w-4 h-4" /> Status curent
                               </label>
                               <select
-                                className="w-full px-3 py-2 text-sm bg-white text-slate-900 border border-slate-200 rounded-md focus:ring-2 focus:ring-red-500"
+                                className="w-full px-4 py-3 text-sm bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-red-100"
                                 value={entry?.status || 'Open'}
                                 onChange={(e) => updateEntry(kpi.id, { status: e.target.value as any })}
                               >
-                                <option value="Open">Deschis</option>
-                                <option value="In Progress">În Lucru</option>
-                                <option value="Done">Finalizat</option>
+                                <option value="Open">Inca nu am inceput</option>
+                                <option value="In Progress">In curs de implementare</option>
+                                <option value="Done">Actiunea a fost finalizata</option>
                               </select>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -225,102 +290,123 @@ export const DataEntry: React.FC<Props> = ({ kpis, data, month, onSaveEntry, onS
 
       {/* SECTION 2: QUALITATIVE REPORT */}
       <div className="space-y-6">
-        <h2 className="text-xl font-bold text-slate-800 border-b border-slate-200 pb-2 flex items-center gap-2">
-          2. Raport Calitativ & Sinteză <span className="text-xs font-normal text-slate-500 ml-auto uppercase tracking-widest border border-slate-200 px-2 py-1 rounded">Secțiune Nouă</span>
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-           {/* LEFT COL */}
-           <div className="space-y-6">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-blue-800">
-                  <ClipboardList className="w-5 h-5" />
-                  <h3 className="font-bold">Status Activități & Proiecte</h3>
-                </div>
-                <textarea 
-                  className="w-full h-32 px-4 py-3 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  placeholder="Sumar executiv al activităților lunii curente..."
-                  value={qualitative.activityStatus}
-                  onChange={e => handleQualitativeChange('activityStatus', e.target.value)}
-                />
-              </div>
+        <div className="border-t-2 border-slate-200 pt-8">
+          <div className="flex items-start gap-3 mb-6">
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">Analiza Calitativa (Optional)</h2>
+              <p className="text-slate-500 mt-1">
+                Aceasta sectiune va permite sa adaugati observatii si comentarii despre activitatea departamentului.
+                Completarea este optionala, dar ajuta la o intelegere mai buna a situatiei.
+              </p>
+            </div>
+          </div>
+        </div>
 
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-purple-800">
-                  <TrendingUp className="w-5 h-5" />
-                  <h3 className="font-bold">Tendințe & Direcții</h3>
-                </div>
-                <textarea 
-                  className="w-full h-32 px-4 py-3 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
-                  placeholder="Ce tendințe observați? Încotro se îndreaptă lucrurile?"
-                  value={qualitative.trends}
-                  onChange={e => handleQualitativeChange('trends', e.target.value)}
-                />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* LEFT COL */}
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-xl border-2 border-slate-200">
+              <div className="flex items-center gap-2 mb-3 text-blue-800">
+                <ClipboardList className="w-5 h-5" />
+                <h3 className="font-bold">Ce activitati s-au desfasurat?</h3>
               </div>
-           </div>
+              <p className="text-sm text-slate-500 mb-3">Rezumati principalele activitati si proiecte din aceasta luna</p>
+              <textarea
+                className="w-full h-28 px-4 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 resize-none"
+                placeholder="De exemplu: Am finalizat proiectul X, am initiat colaborarea cu Y..."
+                value={qualitative.activityStatus}
+                onChange={e => handleQualitativeChange('activityStatus', e.target.value)}
+              />
+            </div>
 
-           {/* RIGHT COL */}
-           <div className="space-y-6">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-orange-800">
-                  <AlertOctagon className="w-5 h-5" />
-                  <h3 className="font-bold">Riscuri Identificate</h3>
-                </div>
-                <textarea 
-                  className="w-full h-32 px-4 py-3 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
-                  placeholder="Blocaje potențiale, riscuri operaționale..."
-                  value={qualitative.risks}
-                  onChange={e => handleQualitativeChange('risks', e.target.value)}
-                />
+            <div className="bg-white p-6 rounded-xl border-2 border-slate-200">
+              <div className="flex items-center gap-2 mb-3 text-purple-800">
+                <TrendingUp className="w-5 h-5" />
+                <h3 className="font-bold">Ce tendinte observati?</h3>
               </div>
+              <p className="text-sm text-slate-500 mb-3">Ce directii sau schimbari observati in departament sau piata?</p>
+              <textarea
+                className="w-full h-28 px-4 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-purple-100 focus:border-purple-500 resize-none"
+                placeholder="De exemplu: Observam o crestere a cererii pentru..., echipa devine mai eficienta in..."
+                value={qualitative.trends}
+                onChange={e => handleQualitativeChange('trends', e.target.value)}
+              />
+            </div>
+          </div>
 
-               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-green-800">
-                  <Lightbulb className="w-5 h-5" />
-                  <h3 className="font-bold">Propuneri Îmbunătățire</h3>
-                </div>
-                <textarea 
-                  className="w-full h-32 px-4 py-3 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
-                  placeholder="Idei pentru optimizarea proceselor..."
-                  value={qualitative.improvements}
-                  onChange={e => handleQualitativeChange('improvements', e.target.value)}
-                />
+          {/* RIGHT COL */}
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-xl border-2 border-slate-200">
+              <div className="flex items-center gap-2 mb-3 text-orange-800">
+                <AlertOctagon className="w-5 h-5" />
+                <h3 className="font-bold">Exista riscuri sau probleme?</h3>
               </div>
-           </div>
+              <p className="text-sm text-slate-500 mb-3">Identificati potentiale blocaje sau riscuri pentru urmatoarea perioada</p>
+              <textarea
+                className="w-full h-28 px-4 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-orange-100 focus:border-orange-500 resize-none"
+                placeholder="De exemplu: Riscam intarzieri din cauza..., lipsa de personal in zona..."
+                value={qualitative.risks}
+                onChange={e => handleQualitativeChange('risks', e.target.value)}
+              />
+            </div>
+
+            <div className="bg-white p-6 rounded-xl border-2 border-slate-200">
+              <div className="flex items-center gap-2 mb-3 text-green-800">
+                <Lightbulb className="w-5 h-5" />
+                <h3 className="font-bold">Aveti propuneri de imbunatatire?</h3>
+              </div>
+              <p className="text-sm text-slate-500 mb-3">Ce idei aveti pentru a imbunatati rezultatele sau procesele?</p>
+              <textarea
+                className="w-full h-28 px-4 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-green-100 focus:border-green-500 resize-none"
+                placeholder="De exemplu: Am putea automatiza procesul de..., propun sa testam..."
+                value={qualitative.improvements}
+                onChange={e => handleQualitativeChange('improvements', e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         {/* NEEDS SECTION */}
-        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-           <h3 className="font-bold text-slate-800 mb-4">Nevoile Departamentului (Categorizate)</h3>
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white p-4 rounded-lg border-l-4 border-red-500 shadow-sm">
-                 <label className="block text-xs font-bold text-red-600 uppercase mb-2">Prioritate Ridicată (High)</label>
-                 <textarea 
-                    className="w-full h-24 px-3 py-2 bg-white text-slate-900 border border-slate-200 rounded focus:ring-2 focus:ring-red-500 text-sm"
-                    placeholder="Resurse critice lipsă..."
-                    value={qualitative.needsHigh}
-                    onChange={e => handleQualitativeChange('needsHigh', e.target.value)}
-                 />
-              </div>
-              <div className="bg-white p-4 rounded-lg border-l-4 border-yellow-500 shadow-sm">
-                 <label className="block text-xs font-bold text-yellow-600 uppercase mb-2">Prioritate Medie</label>
-                 <textarea 
-                    className="w-full h-24 px-3 py-2 bg-white text-slate-900 border border-slate-200 rounded focus:ring-2 focus:ring-yellow-500 text-sm"
-                    placeholder="Necesități pe termen mediu..."
-                    value={qualitative.needsMedium}
-                    onChange={e => handleQualitativeChange('needsMedium', e.target.value)}
-                 />
-              </div>
-              <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500 shadow-sm">
-                 <label className="block text-xs font-bold text-blue-600 uppercase mb-2">Prioritate Scăzută</label>
-                 <textarea 
-                    className="w-full h-24 px-3 py-2 bg-white text-slate-900 border border-slate-200 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="Nice to have..."
-                    value={qualitative.needsLow}
-                    onChange={e => handleQualitativeChange('needsLow', e.target.value)}
-                 />
-              </div>
-           </div>
+        <div className="bg-slate-50 p-6 rounded-xl border-2 border-slate-200">
+          <div className="flex items-start gap-3 mb-4">
+            <HelpCircle className="w-5 h-5 text-slate-600 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-slate-800">De ce resurse aveti nevoie?</h3>
+              <p className="text-sm text-slate-500">Listati resursele sau suportul de care aveti nevoie, grupate pe prioritate</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-xl border-l-4 border-red-500 shadow-sm">
+              <label className="block text-sm font-bold text-red-600 uppercase mb-2">Urgent / Prioritate Maxima</label>
+              <textarea
+                className="w-full h-24 px-3 py-2 bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-red-100 text-sm"
+                placeholder="Ce aveti nevoie urgent?"
+                value={qualitative.needsHigh}
+                onChange={e => handleQualitativeChange('needsHigh', e.target.value)}
+              />
+            </div>
+            <div className="bg-white p-4 rounded-xl border-l-4 border-yellow-500 shadow-sm">
+              <label className="block text-sm font-bold text-yellow-600 uppercase mb-2">Important / Prioritate Medie</label>
+              <textarea
+                className="w-full h-24 px-3 py-2 bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-yellow-100 text-sm"
+                placeholder="Ce ar fi util pe termen mediu?"
+                value={qualitative.needsMedium}
+                onChange={e => handleQualitativeChange('needsMedium', e.target.value)}
+              />
+            </div>
+            <div className="bg-white p-4 rounded-xl border-l-4 border-blue-500 shadow-sm">
+              <label className="block text-sm font-bold text-blue-600 uppercase mb-2">De Dorit / Prioritate Scazuta</label>
+              <textarea
+                className="w-full h-24 px-3 py-2 bg-white text-slate-900 border-2 border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-100 text-sm"
+                placeholder="Ce ar fi frumos sa aveti?"
+                value={qualitative.needsLow}
+                onChange={e => handleQualitativeChange('needsLow', e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
       </div>
