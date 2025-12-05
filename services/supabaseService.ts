@@ -95,19 +95,16 @@ export const uploadCSVToSupabase = async (
     // Generate CSV content
     const csvContent = convertToCSV(state);
 
-    // Create blob from CSV
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-
     // Generate filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const safeDepartment = (state.department || 'Dept').replace(/[^a-zA-Z0-9]/g, '_');
     const safeManager = (state.managerName || 'Manager').replace(/[^a-zA-Z0-9]/g, '_');
     const filename = `${safeDepartment}_${safeManager}_${timestamp}.csv`;
 
-    // Upload to Supabase bucket
+    // Upload to Supabase bucket using string directly
     const { data, error } = await client.storage
       .from(BUCKET_NAME)
-      .upload(filename, blob, {
+      .upload(filename, csvContent, {
         contentType: 'text/csv',
         upsert: false
       });
