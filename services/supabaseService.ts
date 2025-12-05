@@ -101,13 +101,14 @@ export const uploadCSVToSupabase = async (
     const safeManager = (state.managerName || 'Manager').replace(/[^a-zA-Z0-9]/g, '_');
     const filename = `${safeDepartment}_${safeManager}_${timestamp}.csv`;
 
-    // Upload to Supabase bucket using string directly
+    // Convert string to Uint8Array for upload
+    const encoder = new TextEncoder();
+    const csvData = encoder.encode(csvContent);
+
+    // Upload to Supabase bucket
     const { data, error } = await client.storage
       .from(BUCKET_NAME)
-      .upload(filename, csvContent, {
-        contentType: 'text/csv',
-        upsert: false
-      });
+      .upload(filename, csvData);
 
     if (error) {
       console.error('Supabase upload error:', error);
@@ -140,7 +141,7 @@ export const uploadCSVToSupabase = async (
 // Download CSV locally (fallback when Supabase is not configured)
 export const downloadCSVLocally = (state: AppState): void => {
   const csvContent = convertToCSV(state);
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csvContent], { type: 'text/csv' });
 
   const timestamp = new Date().toISOString().slice(0, 10);
   const safeDepartment = (state.department || 'Dept').replace(/[^a-zA-Z0-9]/g, '_');
