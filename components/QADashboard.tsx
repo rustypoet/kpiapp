@@ -32,6 +32,13 @@ export const QADashboard: React.FC<Props> = ({ onBack }) => {
     loadBucketFiles();
   }, []);
 
+  // Auto-load CSV files into datasets when bucketFiles changes
+  useEffect(() => {
+    if (bucketFiles.length > 0) {
+      loadAllCSVData();
+    }
+  }, [bucketFiles]);
+
   const loadBucketFiles = async () => {
     if (!isSupabaseConfigured()) return;
 
@@ -58,6 +65,127 @@ export const QADashboard: React.FC<Props> = ({ onBack }) => {
     } finally {
       setLoadingFiles(false);
     }
+  };
+
+  // Parse CSV content into AppState format
+  const parseCSVToAppState = (csvContent: string, filename: string): AppState | null => {
+    try {
+      const lines = csvContent.split('\n').filter(line => line.trim());
+      if (lines.length < 2) return null;
+
+      const headers = lines[0].split(',');
+      const dataRows = lines.slice(1);
+
+      // Extract department and manager from filename or first row
+      const parsed = parseFileName(filename);
+      let department = parsed.department;
+      let managerName = parsed.manager;
+
+      // Build KPIs and data from CSV
+      const kpisMap = new Map<string, any>();
+      const monthlyData: Record<string, any> = {};
+
+      dataRows.forEach(line => {
+        // Parse CSV line (handle quoted values)
+        const values: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
+
+        if (values.length < 9) return;
+
+        const [luna, dept, manager, kpiName, kpiType, tinta, operator, valoare, status, actiune, responsabil, termen, statusActiune] = values;
+
+        // Update department/manager from data if available
+        if (dept && dept !== '""') department = dept.replace(/"/g, '');
+        if (manager && manager !== '""') managerName = manager.replace(/"/g, '');
+
+        // Create KPI if not exists
+        const kpiId = kpiName.replace(/"/g, '').replace(/\s+/g, '_').toLowerCase();
+        if (!kpisMap.has(kpiId)) {
+          kpisMap.set(kpiId, {
+            id: kpiId,
+            name: kpiName.replace(/"/g, ''),
+            type: kpiType || 'number',
+            operator: operator || '>=',
+            targetValue: parseFloat(tinta) || 0
+          });
+        }
+
+        // Create monthly entry
+        if (!monthlyData[luna]) {
+          monthlyData[luna] = { monthStr: luna, entries: {} };
+        }
+
+        monthlyData[luna].entries[kpiId] = {
+          kpiId,
+          value: isNaN(parseFloat(valoare)) ? valoare.replace(/"/g, '') : parseFloat(valoare),
+          isOutOfTarget: status === 'Sub_Tinta' || status === 'Ratat',
+          actionTask: actiune?.replace(/"/g, '') || '',
+          responsible: responsabil?.replace(/"/g, '') || '',
+          dueDate: termen || '',
+          status: statusActiune || 'Open'
+        };
+      });
+
+      return {
+        department,
+        managerName,
+        projectName: 'Imported from CSV',
+        kpis: Array.from(kpisMap.values()),
+        data: monthlyData
+      };
+    } catch (err) {
+      console.error('Error parsing CSV:', err);
+      return null;
+    }
+  };
+
+  // Load all CSV files and parse them into datasets
+  const loadAllCSVData = async () => {
+    const client = getSupabaseClient();
+    if (!client) return;
+
+    setIsLoading(true);
+    const newDatasets: AppState[] = [];
+
+    for (const file of bucketFiles) {
+      if (!file.name.endsWith('.csv')) continue;
+
+      try {
+        const { data, error } = await client.storage
+          .from('kpi-reports')
+          .download(file.name);
+
+        if (error) {
+          console.error('Error downloading:', file.name, error);
+          continue;
+        }
+
+        const csvContent = await data.text();
+        const appState = parseCSVToAppState(csvContent, file.name);
+
+        if (appState && appState.kpis.length > 0) {
+          newDatasets.push(appState);
+        }
+      } catch (err) {
+        console.error('Error processing:', file.name, err);
+      }
+    }
+
+    setDatasets(newDatasets);
+    setIsLoading(false);
   };
 
   const downloadFile = async (filename: string) => {
@@ -341,12 +469,20 @@ export const QADashboard: React.FC<Props> = ({ onBack }) => {
         )}
 
         {/* Local Excel Analysis Section */}
-        {datasets.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
+            <RefreshCw className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-slate-700">Se incarca datele...</h3>
+            <p className="text-slate-400 mt-2">Analizam rapoartele din cloud</p>
+          </div>
+        ) : datasets.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-300">
             <FileSpreadsheet className="w-16 h-16 text-slate-200 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-slate-700">Analiza Detaliata</h3>
             <p className="text-slate-400 max-w-lg mx-auto mt-2">
-              Pentru a vedea grafice si analiza detaliata, importati fisierele Excel exportate de manageri folosind butonul "Import Excel Local".
+              {bucketFiles.length === 0
+                ? 'Nu exista rapoarte in cloud. Datele vor aparea automat dupa ce managerii trimit rapoartele.'
+                : 'Importati fisierele Excel pentru analiza detaliata sau asteptati incarcarea automata din cloud.'}
             </p>
           </div>
         ) : (
