@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Upload, FileSpreadsheet, Users, Filter, ArrowLeft, AlertTriangle, TrendingUp, Cloud, Download, RefreshCw, Trash2, Calendar, User, Building2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, Users, Filter, ArrowLeft, AlertTriangle, TrendingUp, Cloud, Download, RefreshCw, Trash2, Calendar, User, Building2, Lock, ShieldCheck } from 'lucide-react';
 import { AppState, KpiEntry } from '../types';
 import { importFromExcel } from '../services/excelService';
 import { formatValue } from '../utils';
@@ -19,7 +19,13 @@ interface BucketFile {
 
 const COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2', '#db2777'];
 
+// Simple password for QA access - change this to your desired password
+const QA_PASSWORD = 'qa2024';
+
 export const QADashboard: React.FC<Props> = ({ onBack }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
   const [datasets, setDatasets] = useState<AppState[]>([]);
   const [filterDept, setFilterDept] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,17 +33,29 @@ export const QADashboard: React.FC<Props> = ({ onBack }) => {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load files from Supabase bucket on mount
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === QA_PASSWORD) {
+      setIsAuthenticated(true);
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+    }
+  };
+
+  // Load files from Supabase bucket after authentication
   useEffect(() => {
-    loadBucketFiles();
-  }, []);
+    if (isAuthenticated) {
+      loadBucketFiles();
+    }
+  }, [isAuthenticated]);
 
   // Auto-load CSV files into datasets when bucketFiles changes
   useEffect(() => {
-    if (bucketFiles.length > 0) {
+    if (bucketFiles.length > 0 && isAuthenticated) {
       loadAllCSVData();
     }
-  }, [bucketFiles]);
+  }, [bucketFiles, isAuthenticated]);
 
   const loadBucketFiles = async () => {
     if (!isSupabaseConfigured()) return;
@@ -342,6 +360,65 @@ export const QADashboard: React.FC<Props> = ({ onBack }) => {
   }, [monthHeaders, filteredDatasets]);
 
   const supabaseReady = isSupabaseConfigured();
+
+  // Password Screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white p-8 rounded-2xl border-2 border-slate-200 shadow-lg">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-blue-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-800">Panou QA</h1>
+              <p className="text-slate-500 mt-2">Introduceti parola pentru a accesa panoul de control</p>
+            </div>
+
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Parola de Acces
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError(false);
+                  }}
+                  className={`w-full px-4 py-3 text-lg border-2 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all ${
+                    passwordError ? 'border-red-300 bg-red-50' : 'border-slate-200'
+                  }`}
+                  placeholder="Introduceti parola"
+                  autoFocus
+                />
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-2">Parola incorecta. Incercati din nou.</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-5 h-5" />
+                Acceseaza Panoul QA
+              </button>
+            </form>
+
+            <button
+              onClick={onBack}
+              className="w-full mt-4 text-slate-500 hover:text-slate-700 font-medium py-2 flex items-center justify-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Inapoi la pagina principala
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
