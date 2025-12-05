@@ -1,10 +1,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AppState } from '../types';
 
-// Supabase configuration - these should be set in your environment
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const BUCKET_NAME = import.meta.env.VITE_SUPABASE_BUCKET || 'kpi-reports';
+// Supabase configuration - trim to remove any whitespace/newlines
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const BUCKET_NAME = (import.meta.env.VITE_SUPABASE_BUCKET || 'kpi-reports').trim();
 
 let supabase: SupabaseClient | null = null;
 
@@ -15,7 +15,12 @@ export const getSupabaseClient = (): SupabaseClient | null => {
   }
 
   if (!supabase) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    try {
+      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (err) {
+      console.error('Failed to create Supabase client:', err);
+      return null;
+    }
   }
 
   return supabase;
@@ -101,14 +106,13 @@ export const uploadCSVToSupabase = async (
     const safeManager = (state.managerName || 'Manager').replace(/[^a-zA-Z0-9]/g, '_');
     const filename = `${safeDepartment}_${safeManager}_${timestamp}.csv`;
 
-    // Convert string to Uint8Array for upload
-    const encoder = new TextEncoder();
-    const csvData = encoder.encode(csvContent);
+    // Create File object for upload
+    const file = new File([csvContent], filename, { type: 'text/csv' });
 
     // Upload to Supabase bucket
     const { data, error } = await client.storage
       .from(BUCKET_NAME)
-      .upload(filename, csvData);
+      .upload(filename, file);
 
     if (error) {
       console.error('Supabase upload error:', error);
