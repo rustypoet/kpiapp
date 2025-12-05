@@ -1,0 +1,5 @@
+{
+  "name": "KPI Central",
+  "description": "A manager-focused performance tracking tool that centralizes KPI data, enforces action plans for missed targets, and visualizes trends, all backed by simple Excel files.",
+  "requestFramePermissions": []
+}
